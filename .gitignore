@@ -1,0 +1,11 @@
+# Patcher output
+out/
+
+# Firmware images (never commit inMusic files)
+*.img
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
