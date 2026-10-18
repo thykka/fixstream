@@ -17,7 +17,7 @@ Works only with firmware **4.3.4**. Not made or supported by Numark or inMusic. 
 ## What you need
 
 - A Mac (Linux might work, but isn't fully tested)
-- A USB stick
+- A USB stick or SD card
 - About 2 GB of free disk space
 
 ## Step 1: Create the firmware
@@ -39,8 +39,8 @@ If you'd rather skip a feature, add `--no-beat-jump`, `--no-extra-fx` or `--no-s
 ## Step 2: Install it
 
 1. Plug the unit into mains power. **Don't switch it off during the update** or you'll have an expensive paperweight instead of a DJ controller.
-2. Copy the new firmware from the `out` folder to your USB stick. Don't rename it.
-3. Insert the USB stick into the unit and go to **Settings > About/Update > Options > USB/SD**.
+2. Copy the new firmware from the `out` folder to a USB stick or SD card. Don't rename it.
+3. Insert it into the unit and go to **Settings > About/Update > Options > USB/SD**.
 
 If you need to go back to the original firmware, just install the original 4.3.4 file the same way.
 
