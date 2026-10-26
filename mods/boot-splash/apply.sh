@@ -1,14 +1,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Custom boot splash. Sourced by patch.sh.
 #   1. splash partition: splash.png (1280×800 landscape, opaque) as the raw image at $SPLASH,
-#      rotated 90° clockwise to 800×1280, BGRA, 4,096,000 bytes.
-#   2. Engine's own splash: the same PNG at /usr/Engine/emod.png, and the JC11 skin's compiled QML
-#      points its splash image there.
+#      rotated 90° clockwise to 800×1280, BGRA, 4,096,000 bytes (stored uncompressed in AZ01).
+#   2. Engine's own splash: the same PNG at /usr/Engine/emod.png, and Engine's splash path points there
+#      (engine-patch.py, patch splash: the EmbeddedCommon.qml binding JC11 inherits).
+# Applies to stock Engine or to the beat jump or extra FX mod's output (engine-patch.py checks); the edits don't overlap.
 
-MOD="$ROOT/mods/boot-splash"
 ENGINE=/usr/Engine/Engine
 PNG=/usr/Engine/emod.png
 
+command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null || die "ffmpeg (ffmpeg, ffprobe) not found (macOS: brew install ffmpeg)"
 [ "$(ffprobe -v error -show_entries stream=width,height -of csv=p=0:s=x "$MOD/splash.png")" = 1280x800 ] || die "splash.png is not 1280x800"
 
 ffmpeg -v error -i "$MOD/splash.png" -f rawvideo -pix_fmt rgba "$FWORK/splash.rgba"
@@ -31,11 +32,7 @@ print('splash: %d px checked (rotation, BGRA)' % (W * H))
 PY
 
 dbg "dump $ENGINE $FWORK/Engine.in"
-[ -z "$(dbg "stat $PNG")" ] || die "$PNG already exists"
-
-# JC11.qml builds the path as `${base}${isPortrait ? "_portrait" : ""}.png`; NH08 is landscape.
-python3 -I "$ROOT/tools/engine-qmlc.py" replace "$FWORK/Engine.in" "$FWORK/Engine" JM08For3rdParty \
-	../../EmbeddedCommon/img/SplashScreen "file://${PNG%.png}"
+python3 -I "$TOOLS/engine-patch.py" apply "$FWORK/Engine.in" "$FWORK/Engine" splash
 
 replace "$FWORK/Engine" "$ENGINE"
-add "$MOD/splash.png" "$PNG" 0644
+add "$MOD/splash.png" "$PNG" 0644  # like Engine's other data files

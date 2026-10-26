@@ -1,77 +1,69 @@
-	// fixstream extra-fx mod: replaces DJFxSelect.
-	// FX select buttons: stock effect; Shift: the first effect of the button's list, each further Shift press the next.
-	// Needs /Configuration/NHFx False in the Engine config (with NHFx True only the four stock effects exist).
+	// fixstream extra FX (5.x): the four FX select buttons, in place of the stock DJFxSelect block.
+	// Press: the button's stock effect. Shift + press: the first effect of the button's extra list,
+	// each further Shift press the next one, wrapping around.
+	// LED: off while FX are disabled; bright when the selected effect is the button's (blinking while
+	// an effect is on), dim otherwise.
+	// Needs hasDJFx = 1 and hasNHFx = 0 in the Engine's NH08 config (engine-patch.py, patch dj-fx).
 	Item {
-		objectName: 'fixstream FX Select'
+		id: fxButtons
+		objectName: "fixstream FX Select"
+
+		// Every FX channel carries the same effect, so the first one stands for all
+		readonly property string selected: fxConfig.channel[fxConfig.channelNames[0]].fxType
+
+		function select(fx) {
+			for (const name of fxConfig.channelNames) {
+				fxConfig.channel[name].pFxType.translator.string = fx
+			}
+		}
 
 		EffectNames {
 			id: names
 		}
 
 		Repeater {
-			model: ListModel {
-				Component.onCompleted: {
-					const types = [
-						{'note': 0, 'fxName': names.kEcho, 'shiftNames': [names.kHoldEcho, names.kPingPong, names.kReverseReverb, names.kEchoOut]},
-						{'note': 1, 'fxName': names.kFlanger, 'shiftNames': [names.kCrush, names.kRecycler, names.kRiser, names.kFlexGate]},
-						{'note': 2, 'fxName': names.kDelay, 'shiftNames': [names.kReverb, names.kSwellVerb, names.kReverbRise, names.kReverbDrop]},
-						{'note': 3, 'fxName': names.kPhaser, 'shiftNames': [names.kBrake, names.kBackspin, names.kScaleDown, names.kStutterOut]},
-					]
-					for(const type of types) {
-						append({'note': type.note, 'fxName': type.fxName, 'shiftNames': type.shiftNames.join('|')})
-					}
-				}
-			}
+			// Set once, not bound: the EffectNames constants don't notify, so a binding would warn
+			Component.onCompleted: model = [
+				{ note: 0, fx: names.kEcho, extra: [names.kHoldEcho, names.kPingPong, names.kReverseReverb, names.kEchoOut] },
+				{ note: 1, fx: names.kFlanger, extra: [names.kCrush, names.kRecycler, names.kRiser, names.kFlexGate] },
+				{ note: 2, fx: names.kDelay, extra: [names.kReverb, names.kSwellVerb, names.kReverbRise, names.kReverbDrop] },
+				{ note: 3, fx: names.kPhaser, extra: [names.kBrake, names.kBackspin, names.kScaleDown, names.kStutterOut] }
+			]
 
 			Item {
-				readonly property var shiftNames: model.shiftNames.split('|')
+				id: fxButton
+				readonly property int note: modelData.note
+				readonly property string fx: modelData.fx
+				readonly property var extra: modelData.extra
+				readonly property bool owns: fxButtons.selected === fx || extra.indexOf(fxButtons.selected) !== -1
+
+				// The extra effect after the selected one; the first if another effect is selected
+				function nextExtra() {
+					return extra[(extra.indexOf(fxButtons.selected) + 1) % extra.length]
+				}
 
 				ValueNoteAssignment {
-					objectName: 'FX %1'.arg(model.fxName)
+					objectName: "FX %1".arg(fxButton.fx)
 					channel: fxConfig.midiChannel
-					note: model.note
+					note: fxButton.note
 					output: QtObject {
-						function setValue(channel, value, assignmentEnabled) {
-							if(!assignmentEnabled || !value) {
-								return
-							}
-
-							let fxName = model.fxName
-							if(globalConfig.shift) {
-								const current = shiftNames.indexOf(fxConfig.channel[fxConfig.channelNames[0]].fxType)
-								fxName = shiftNames[(current + 1) % shiftNames.length]
-							}
-							for(const name of fxConfig.channelNames) {
-								fxConfig.channel[name].pFxType.translator.string = fxName
+						function setValue(channel, pressed, enabled) {
+							if (enabled && pressed) {
+								fxButtons.select(globalConfig.shift ? fxButton.nextExtra() : fxButton.fx)
 							}
 						}
 					}
 				}
 
 				OutputAssignment {
-					objectName: 'FX %1 LED'.arg(model.fxName)
-					properties: { 'ledValue': '' }
+					objectName: "FX %1 LED".arg(fxButton.fx)
+					properties: { "ledValue": "" }
 
-					readonly property bool active: fxConfig.anyFxActive
-					readonly property string fxType: fxConfig.channel[fxConfig.channelNames[0]].fxType
-					readonly property bool assigned: fxType === model.fxName || shiftNames.indexOf(fxType) !== -1
-
-					readonly property int ledValue: {
-						if(fxConfig.fxEnabled) {
-							if(assigned) {
-								!active || (active && globalConfig.flashStateFast) ? 127 : 1
-							}
-							else {
-								1
-							}
-						}
-						else {
-							0
-						}
-					}
+					readonly property bool bright: fxButton.owns && (globalConfig.flashStateFast || !fxConfig.anyFxActive)
+					readonly property int ledValue: fxConfig.fxEnabled ? (bright ? 127 : 1) : 0
 
 					function send() {
-						device.sendSimpleColor(fxConfig.midiChannel, model.note, ledValue)
+						device.sendSimpleColor(fxConfig.midiChannel, fxButton.note, ledValue)
 					}
 
 					Component.onCompleted: send()
