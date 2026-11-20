@@ -2,7 +2,7 @@
 
 New features for the Numark Mixstream Pro. fixstream takes the official firmware update and adds the features below. You then install the result like any normal update.
 
-Works only with firmware **5.0.4**. Not made or supported by Numark or inMusic. **Use at your own risk.**
+Not made or supported by Numark or inMusic. **Use at your own risk.**
 
 ## Which version?
 
@@ -12,6 +12,9 @@ fixstream supports two firmware versions. Use the one that matches the firmware 
 - **4.3.4**: [fixstream v1.0.0](https://github.com/thykka/fixstream/tree/v1.0.0).
 
 Moving from 4.x to 5.x affects your library; see [Your Engine DJ library](#your-engine-dj-library) first.
+
+> [!IMPORTANT]
+> fixstream does *not* work with Mixstream Pro+ or Mixstream Pro Go - Only with the original Mixstream Pro
 
 ## Features
 
